@@ -1,0 +1,5 @@
+acme_tiny.py
+secrets/*
+work/*
+!work/.gitkeep
+!secrets/.gitkeep
