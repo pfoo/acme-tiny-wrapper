@@ -1,13 +1,16 @@
 #! /bin/bash
 
+#config
 domain="networklab.fr"
 altname="www.networklab.fr plop.networklab.fr prout.networklab.fr"
 challenge_dir="/home/pfoo/Documents/dev/github/acme-tiny-wrapper/plop/"
 
+#don't edit below here
 mode=$1
 
 acme_url="https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py"
 
+#Define this script path
 my_source="${BASH_SOURCE[0]}"
 while [ -h "$my_source" ]; do # resolve $my_source until the file is no longer a symlink
   my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )"
@@ -16,6 +19,7 @@ while [ -h "$my_source" ]; do # resolve $my_source until the file is no longer a
 done
 my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )/"
 
+#keys and certificates location, relative to this script path
 account_key="$my_dir/secrets/account.key"
 domain_key="$my_dir/secrets/$domain.key"
 domain_csr="$my_dir/work/$domain/$domain.csr"
@@ -28,6 +32,11 @@ umask u=rwx,g=rx,o=
 
 if [ ! -f /usr/bin/python ]; then
 	echo "Missing python binary"
+	exit 1
+fi
+
+if [ ! -f /usr/bin/openssl ]; then
+	echo "Missing openssl binary"
 	exit 1
 fi
 
