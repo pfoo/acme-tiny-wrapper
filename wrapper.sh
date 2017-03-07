@@ -3,7 +3,12 @@
 #config
 domain="networklab.fr"
 altname="www.networklab.fr plop.networklab.fr prout.networklab.fr"
-challenge_dir="/home/pfoo/Documents/dev/github/acme-tiny-wrapper/plop/"
+challenge_dir="/home/pfoo/Local/tmp/prout/"
+
+#set this if you want to run this script as root
+# acme_tiny will therefore be run by $acme_user and a few files will have their permissions changed to acme_user
+# This add a layer of security for domain key as it is no more readable by acme_tiny
+acme_user="pfoo"
 
 #don't edit below here
 mode=$1
@@ -31,6 +36,14 @@ domain_crt="$my_dir/work/$domain/$domain.crt"
 domain_pem="$my_dir/work/$domain/$domain.pem"
 intermediate="$my_dir/work/$domain/intermediate.pem"
 
+#switch permission to user if the script is run as root
+## this is needed for every file that need to be accessible by acme_tiny.py (acme_tiny.py, CSR, account key, domain work dir)
+function switch_perm () {
+	if [ ! -z $acme_user ]; then
+		chown $acme_user:$acme_user $@
+	fi
+}
+
 #defaulting to umask 027
 umask u=rwx,g=rx,o=
 
@@ -44,15 +57,24 @@ if [ ! -f /usr/bin/openssl ]; then
 	exit 1
 fi
 
+if [ ! -z $acme_user ] && [ ! "`whoami`" == "root" ]; then
+	echo "I need to be run as root user"
+	exit 1
+fi
+
 #download latest version of acme tiny if missing
 if [ ! -f $my_dir/acme_tiny.py ]; then
 	wget -O $my_dir/acme_tiny.py https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py
+	#if run by root : this script must belong to $acme_user
+	switch_perm $my_dir/acme_tiny.py
 fi
 
 #create a working directory for the domain
 if [ ! -d $my_dir/work/$domain ]; then
 	#need permission rwxr-x--- (set by umask)
 	mkdir $my_dir/work/$domain
+	#if run by root : this directory must belong to $acme_user
+	switch_perm $my_dir/work/$domain
 fi
 
 #checking account key validity
@@ -70,8 +92,10 @@ if [ ! $error == 0 ] ; then
 	if [ "$useraction" == "yes" ]; then
 		#forcing generated file to directly have user only permission
 		umask u=rwx,g=,o=
-		openssl genrsa 8192 > $account_key
+		openssl genrsa 4096 > $account_key
 		umask u=rwx,g=rx,o=
+		#if run by root : this key must belong to $acme_user
+		switch_perm $account_key
 	else
 		exit 1
 	fi
@@ -122,6 +146,8 @@ if [ ! $error == 0 ]; then
 				openssl req -new -sha256 -key $domain_key -subj "/" -reqexts LE_SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[LE_SAN]\nsubjectAltName=" ; printf "DNS:%b," $domain $altname | sed 's/.$//')) -out $domain_csr
 				error=$?
 			fi
+			#if run by root : this file must belong to $acme_user
+			switch_perm $domain_csr
 			if [ $error == 0 ]; then
 				echo "Success !"
 			else
@@ -138,19 +164,32 @@ if [ ! $error == 0 ]; then
 	fi
 fi
 
-#check if challenge_dir is writeable
-if [ ! -d $challenge_dir ] || [ ! -w $challenge_dir ]; then
+#check if challenge_dir is writeable by the user running the script or by $acme_user if the script is run by root
+if [ ! -z $acme_user ]; then
+	is_writeable=$(su $acme_user -c "test -w '$challenge_dir'" && echo yes)
+else
+	is_writeable=$(test -w "$challenge_dir" && echo yes)
+fi
+if [ ! "$is_writeable" == "yes"  ]; then
 	echo "Challenge directory $challenge_dir is not writeable by `whoami` user. Abording."
 	echo "If the directory is existing, check that `whoami` user is in $challenge_dir directory group"
 	if [ "$mode" == "cron" ]; then echo "Autorenewing failed. You need to check what went wrong and launch this script manually or your site will be unreachable as soon as your previous certificate expire"; fi
 	exit 1
 fi
 
-#defaulting to umask 022 in order to make sure the created challenge file in acme-dir is world- (mainly webserver-) readable
-umask u=rwx,go=rx
-python $my_dir/acme_tiny.py --account-key $account_key --csr $domain_csr --acme-dir $challenge_dir > $domain_crt
-#Switching back to umask 027
-umask u=rwx,g=rx,o=
+if [ ! -z $acme_user ]; then #running as root so we switch to $acme_user
+	su $acme_user -c "umask u=rwx,go=rx ;\
+		python $my_dir/acme_tiny.py --account-key $account_key --csr $domain_csr --acme-dir $challenge_dir > $domain_crt ;\
+		chmod o-r $domain_crt ;\
+		umask u=rwx,g=rx,o="
+else #running as user
+	#defaulting to umask 022 in order to make sure the created challenge file in acme-dir is world- (mainly webserver-) readable
+	umask u=rwx,go=rx
+	python $my_dir/acme_tiny.py --account-key $account_key --csr $domain_csr --acme-dir $challenge_dir > $domain_crt
+	chmod o-r $domain_crt
+	#Switching back to umask 027
+	umask u=rwx,g=rx,o=
+fi
 
 openssl x509 -in $domain_crt -text -noout &> /dev/null
 error=$?
