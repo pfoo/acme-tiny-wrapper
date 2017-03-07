@@ -19,6 +19,10 @@ while [ -h "$my_source" ]; do # resolve $my_source until the file is no longer a
 done
 my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )/"
 
+chmod 700 $my_dir/secrets
+chmod 750 $my_dir/work
+chmod 740 $my_dir/wrapper.sh
+
 #keys and certificates location, relative to this script path
 account_key="$my_dir/secrets/account.key"
 domain_key="$my_dir/secrets/$domain.key"
