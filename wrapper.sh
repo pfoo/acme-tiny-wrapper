@@ -1,17 +1,34 @@
 #! /bin/bash
 
-#config
-domain="networklab.fr"
-altname="www.networklab.fr plop.networklab.fr prout.networklab.fr"
-challenge_dir="/home/pfoo/Local/tmp/prout/"
-
 #set this if you want to run this script as root
 # acme_tiny will therefore be run by $acme_user and a few files will have their permissions changed to acme_user
 # This add a layer of security for domain key as it is no more readable by acme_tiny
 acme_user="pfoo"
 
-#don't edit below here
-mode=$1
+#########################
+# don't edit below here #
+#########################
+domain=$1
+challenge_dir=$2
+altname=${@:3}
+
+if [ -z $challenge_dir ]; then
+	echo "Syntax: $0 domain.tld ChallengeDir AlternativeNames"
+	exit 1
+fi
+
+#dev only
+echo "RUNNING IN DEV MODE"
+domain="networklab.fr"
+altname="www.networklab.fr plop.networklab.fr prout.networklab.fr"
+challenge_dir="/home/pfoo/Local/tmp/prout/"
+
+#this check if stdout is asigned to a terminal or not (cron)
+if [ -t 1 ]; then
+	mode="normal"
+else
+	mode="cron"
+fi
 
 acme_url="https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py"
 
