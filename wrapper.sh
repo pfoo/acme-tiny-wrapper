@@ -1,5 +1,7 @@
 #! /bin/bash
 
+#v1.0
+
 #You might need to change this if acme-tiny switch from github or if letsencrypt change their intermediate certificate
 acme_tiny_url="https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py"
 le_intermediate_url="https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
