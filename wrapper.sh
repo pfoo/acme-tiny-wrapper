@@ -1,6 +1,6 @@
 #! /bin/bash
 
-#v1.0
+#v1.1
 
 #You might need to change this if acme-tiny switch from github or if letsencrypt change their intermediate certificate
 acme_tiny_url="https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py"
@@ -57,6 +57,7 @@ domain_csr="$my_dir/work/$domain/$domain.csr"
 domain_crt="$my_dir/work/$domain/$domain.crt"
 domain_pem="$my_dir/work/$domain/$domain.pem"
 intermediate="$my_dir/work/$domain/intermediate.pem"
+dh_param="$my_dir/secrets/dh4096.pem"
 
 #switch permission to user if the script is run as root
 ## this is needed for every file that need to be accessible by acme_tiny.py (acme_tiny.py, CSR, account key, domain work dir)
@@ -79,9 +80,38 @@ if [ ! -f /usr/bin/openssl ]; then
 	exit 1
 fi
 
+#if $acme_user is defined : we need to run as root
 if [ ! -z $acme_user ] && [ ! "`whoami`" == "root" ]; then
-	echo "I need to be run as root user"
+	echo "I am configured to be run as root user only"
 	exit 1
+fi
+
+#if $acme_user is undefined : we should not run as root
+if [ -z $acme_user ] && [ "`whoami`" == "root" ]; then
+	echo "I am not configured to run as root"
+	exit 1
+fi
+
+#DH parameter check and generation
+if [ "$use_custom_dh" == "yes" ]; then
+	openssl dhparam -in $dh_param -check -text &> /dev/null
+	error=$?
+	if [ ! $error == 0 ]; then
+		echo "Missing or invalid custom DH parameter"
+		if [ "$mode" == "cron" ]; then
+			echo "[DISASTER] Autorenewing failed. You need to check what went wrong and launch this script manually or your site will be unreachable as soon as your previous certificate expire"
+			exit 1
+		fi
+		declare -l useraction #force action var to lowercase
+		read -p "Would you like to generate a new 4096bit DH parameter now (this might take a very long time) ? (yes/no) " useraction
+		if [ "$useraction" == "yes" ]; then
+			openssl dhparam 4096 -out $dh_param
+		else
+			echo "You asked for a custom dh parameter in configuration, but denied it here. Cannot continue."
+			echo "You can also provide your own DH parameter in PEM format at $dh_param"
+			exit 1
+		fi
+	fi
 fi
 
 #download latest version of acme tiny if missing
@@ -126,6 +156,7 @@ if [ ! $error == 0 ] ; then
 		#if run by root : this key must belong to $acme_user
 		switch_perm $account_key
 	else
+		echo "If you already have a valid account key, place it in PEM format at $account_key and assure it is readable by users `whoami` and $acme_user"
 		echo "Cannot continue without a valid account key. Exiting."
 		exit 1
 	fi
@@ -251,6 +282,12 @@ echo "All good, you now have a new signed certificate for $domain !"
 mv $intermediate.new $intermediate
 cat $domain_crt $intermediate > $domain_pem #we are bundling LE signed certificate with LE intermediate certificate as apache SSLCertificateFile allow this since version 2.4.8 (certificates must be sorted from leaf to root)
 
-#todo : Allow adding custom DH parameters and an EC curve name for ephemeral keys in $domain_pem ; see http://httpd.apache.org/docs/current/mod/mod_ssl.html#sslcertificatefile
+# Add custom DH parameters and an EC curve name for ephemeral keys in $domain_pem ; see http://httpd.apache.org/docs/current/mod/mod_ssl.html#sslcertificatefile
+if [ "$use_custom_dh" == "yes" ]; then
+	cat $dh_param >> $domain_pem
+fi
+if [ $use_custom_ecdh ]; then
+	openssl ecparam -name $use_custom_ecdh >> $domain_pem
+fi
 
 exit 0

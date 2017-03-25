@@ -2,3 +2,10 @@
 # acme_tiny will therefore be run by $acme_user and a few files will have their permissions changed to acme_user
 # This add a layer of security for domain key as it is no more readable by acme_tiny
 acme_user="pfoo"
+
+#uncomment this if you want this script to generate and use a custom DH parameter (it will be appended to the generated pem file and autoloaded by apache)
+#use_custom_dh="yes"
+
+#uncomment this if you want this script to enforce a specific ECDH curve (it will be appended to the generated pem file and autoloaded by apache)
+#	valid curves are secp256r1, secp384r1 and secp521r1 (unsupported by chrome); a full list can be obtained using openssl ecparam -list_curves
+#use_custom_ecdh="secp384r1"
