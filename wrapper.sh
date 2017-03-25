@@ -1,10 +1,5 @@
 #! /bin/bash
 
-#set this if you want to run this script as root
-# acme_tiny will therefore be run by $acme_user and a few files will have their permissions changed to acme_user
-# This add a layer of security for domain key as it is no more readable by acme_tiny
-acme_user="pfoo"
-
 #You might need to change this if acme-tiny switch from github or if letsencrypt change their intermediate certificate
 acme_tiny_url="https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py"
 le_intermediate_url="https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
@@ -34,8 +29,6 @@ else
 	mode="cron"
 fi
 
-acme_url="https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py"
-
 #Define this script path
 my_source="${BASH_SOURCE[0]}"
 while [ -h "$my_source" ]; do # resolve $my_source until the file is no longer a symlink
@@ -44,6 +37,11 @@ while [ -h "$my_source" ]; do # resolve $my_source until the file is no longer a
   [[ $my_source != /* ]] && my_source="$my_dir/$my_source" # if $my_source was a relative symlink, need to resolve its relative to the path where the symlink file was located
 done
 my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )/"
+
+#loading config
+if [ -f $my_dir/config.cf ]; then
+	source $my_dir/config.cf
+fi
 
 #fix permissions as git is not keeping them
 chmod 700 $my_dir/secrets

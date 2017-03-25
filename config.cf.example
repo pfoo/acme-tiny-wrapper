@@ -1,0 +1,4 @@
+#set this if you want to run this script as root
+# acme_tiny will therefore be run by $acme_user and a few files will have their permissions changed to acme_user
+# This add a layer of security for domain key as it is no more readable by acme_tiny
+acme_user="pfoo"
