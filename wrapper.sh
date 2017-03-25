@@ -245,6 +245,7 @@ fi
 
 #Final stage. This is only done if all preceding test succeeded.
 #This means that, if anything went wrong during autorenew, $intermediate and $domain_pem will still be valid and wont make your site unreachable when apache restart.
+echo "All good, you now have a new signed certificate for $domain !"
 mv $intermediate.new $intermediate
 cat $domain_crt $intermediate > $domain_pem #we are bundling LE signed certificate with LE intermediate certificate as apache SSLCertificateFile allow this since version 2.4.8 (certificates must be sorted from leaf to root)
 
