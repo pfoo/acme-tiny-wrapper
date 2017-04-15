@@ -23,7 +23,8 @@ If order to have challenge working you need to
 - allow apache to read the challenge directory
 - the challenge file -created by acme-tiny- will belong to user acme and be readable by user, group and other.
 
-If you are using apache-mpm-itk, each of your site should belong to a different userid and groupid
+If you are using apache-mpm-itk, each of your site should belong to a different userid and groupid.
+
 For example, the site example.tld which has its document root in /home/example.tld/www/ is accessible in read-write by user example.tld and read-only by group example.tld and no permission at all for other.
 
 As user example.tld, create the challenge directory and allow group writing in it :
