@@ -1,7 +1,7 @@
 #set this if you want to run this script as root
 # acme_tiny will therefore be run by $acme_user and a few files will have their permissions changed to acme_user
 # This add a layer of security for domain key as it is no more readable by acme_tiny
-acme_user="pfoo"
+#acme_user="acme"
 
 #uncomment this if you want this script to generate and use a custom DH parameter (it will be appended to the generated pem file and autoloaded by apache)
 #use_custom_dh="yes"
