@@ -1,4 +1,10 @@
-## This README suppose you are logged in as root user.
+# acme-tiny wrapper
+
+This tiny bash script is a wrapper for https://github.com/diafygi/acme-tiny allowing easy deployment and management of LetsEncrypt SSL/TLS certificates.
+Syntax: ./wrapper.sh domain.tld ChallengeDir [Alternative Names separated by spaces]
+
+## Usage Example
+This example suppose you are logged in as root user.
 
 ### Create a dedicated user for the script :
 ```
@@ -72,3 +78,21 @@ Uncomment the variable acme_user in config.cf and define it to the user that sho
 ```
 
 ### Create cron jobs
+
+#### If runnng as user
+Access crontabs :
+```
+su - acme
+crontab -e
+```
+
+Add this line to renew your certificate every 15th day of month at 4AM :
+```
+0 4     15 * * /home/acme/acme-tiny-wrapper/wrapper.sh example.tld /home/example.tld/www/challenges/ www.example.tld
+```
+
+#### If runnng as root
+Edit /etc/crontab
+```
+0 4     15 * *  root    /home/acme/acme-tiny-wrapper/wrapper.sh example.tld /home/example.tld/www/challenges/ www.example.tld
+```
