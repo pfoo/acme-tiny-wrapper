@@ -79,7 +79,7 @@ Uncomment the variable acme_user in config.cf and define it to the user that sho
 
 ### Create cron jobs
 
-#### If runnng as user
+#### If running as user
 Access crontabs :
 ```
 su - acme
@@ -91,8 +91,16 @@ Add this line to renew your certificate every 15th day of month at 4AM :
 0 4     15 * * /home/acme/acme-tiny-wrapper/wrapper.sh example.tld /home/example.tld/www/challenges/ www.example.tld
 ```
 
-#### If runnng as root
+Then edit /etc/crontab in order to reload apache. Make sure this is done *after* certificate renew (here at 4:15AM)
+```
+15 4    15 * *  root    /etc/init.d/apache2 reload
+```
+
+#### If running as root
 Edit /etc/crontab
 ```
 0 4     15 * *  root    /home/acme/acme-tiny-wrapper/wrapper.sh example.tld /home/example.tld/www/challenges/ www.example.tld
+15 4    15 * *  root    /etc/init.d/apache2 reload
 ```
+
+If you are renewing multiple certificates, make sure the cron reloading apache is always started AFTER every certificate renewing are done.
