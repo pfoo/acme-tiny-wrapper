@@ -98,6 +98,7 @@ if [ "$use_custom_dh" == "yes" ]; then
 	error=$?
 	if [ ! $error == 0 ]; then
 		echo "Missing or invalid custom DH parameter"
+		#exit if we are running in crontab because we cannot continue without user interaction
 		if [ "$mode" == "cron" ]; then
 			echo "[DISASTER] Autorenewing failed. You need to check what went wrong and launch this script manually or your site will be unreachable as soon as your previous certificate expire"
 			exit 1
@@ -237,7 +238,7 @@ else
 	user=`whoami`
 fi
 if [ ! "$is_writeable" == "yes"  ]; then
-	echo "Challenge directory $challenge_dir is not writeable by $user user. Abording."
+	echo "Challenge directory $challenge_dir is not writeable by $user user. Aborting."
 	echo "If the directory is existing, check that $user user is in the group of $challenge_dir directory."
 	if [ "$mode" == "cron" ]; then echo "[DISASTER] Autorenewing failed. You need to check what went wrong and launch this script manually or your site will be unreachable as soon as your previous certificate expire"; fi
 	exit 1
