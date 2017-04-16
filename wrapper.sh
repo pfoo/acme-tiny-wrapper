@@ -9,9 +9,98 @@ le_intermediate_url="https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.
 #########################
 # don't edit below here #
 #########################
+
+#Define this script path
+my_source="${BASH_SOURCE[0]}"
+while [ -h "$my_source" ]; do # resolve $my_source until the file is no longer a symlink
+  my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )"
+  my_source="$(readlink "$my_source")"
+  [[ $my_source != /* ]] && my_source="$my_dir/$my_source" # if $my_source was a relative symlink, need to resolve its relative to the path where the symlink file was located
+done
+my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )/"
+
+#loading default configuration file
+if [ -f $my_dir/config.cf ]; then
+        source $my_dir/config.cf
+fi
+
+#######################################################
+################### OPTION HANDLING ###################
+#######################################################
+
+#check if GNU enhanced getopt (util-linux) is available or exit
+getopt --test > /dev/null
+if [[ $? -ne 4 ]]; then
+	echo "Missing GNU getopt fom util-linux. Cannot use shell built-in getopt and getopts. Exiting."
+	exit 1
+fi
+
+#supported options in short and long version
+SHORT=hvk:
+LONG=help,verbose,key:,custom-dh,custom-ecdh:
+
+PARSED=$(getopt --options $SHORT --longoptions $LONG --name "$0" -- "$@")
+
+#Wrong option supplied or missing argument for an option. getopt will output an error message, but we still need to exit.
+if [[ $? -ne 0 ]]; then
+	exit 2
+fi
+
+# use eval with "$PARSED" to properly handle the quoting
+eval set -- "$PARSED"
+while true; do
+	case "$1" in
+		-h|--help)
+			echo "Syntax: $0 [options] domain.tld ChallengeDir [Alternative Names separated by spaces]"
+			echo "Available options :"
+				echo "-h / --help"
+				echo "-v / --verbose"
+				echo "-k / --key"
+				echo "--custom-dh"
+				echo "--custom-ecdh (secp256r1|secp384r1|secp521r1)"
+			exit 1
+			shift
+			;;
+		-v|--verbose)
+			v=y
+			shift
+			;;
+		-k|--key)
+			key="$2"
+			shift 2
+			;;
+		--custom-dh)
+			use_custom_dh="yes"
+			shift
+			;;
+		--custom-ecdh)
+			use_custom_ecdh="$2"
+			shift 2
+			;;
+		--)
+			shift
+			break
+			;;
+		*)
+			echo "error"
+			exit 3
+			;;
+	esac
+done
+
+#non-option argument handling
 domain=$1
 challenge_dir=$2
 altname=${@:3}
+
+echo "verbose: $v ; key: $key ; customDH: $use_custom_dh ; customECDH: $use_custom_ecdh ; $domain $challenge_dir $altname"
+
+####DEV
+exit 1
+
+#######################################################
+################# END OPTION HANDLING #################
+#######################################################
 
 if [ -z $challenge_dir ]; then
 	echo "Syntax: $0 domain.tld ChallengeDir [AlternativeNames]"
@@ -29,20 +118,6 @@ if [ -t 1 ]; then
 	mode="normal"
 else
 	mode="cron"
-fi
-
-#Define this script path
-my_source="${BASH_SOURCE[0]}"
-while [ -h "$my_source" ]; do # resolve $my_source until the file is no longer a symlink
-  my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )"
-  my_source="$(readlink "$my_source")"
-  [[ $my_source != /* ]] && my_source="$my_dir/$my_source" # if $my_source was a relative symlink, need to resolve its relative to the path where the symlink file was located
-done
-my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )/"
-
-#loading config
-if [ -f $my_dir/config.cf ]; then
-	source $my_dir/config.cf
 fi
 
 #fix permissions as git is not keeping them
