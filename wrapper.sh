@@ -19,6 +19,13 @@ while [ -h "$my_source" ]; do # resolve $my_source until the file is no longer a
 done
 my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )/"
 
+#init default values
+declare acme_user=""
+declare -u account_key_type="RSA"
+declare -u domain_key_type="ECDSA"
+declare -l use_custom_dh="no"
+declare -l use_custom_ecdh=""
+
 #loading default configuration file
 if [ -f $my_dir/config.cf ]; then
         source $my_dir/config.cf
@@ -36,8 +43,8 @@ if [[ $? -ne 4 ]]; then
 fi
 
 #supported options in short and long version
-SHORT=hvk:
-LONG=help,verbose,key:,custom-dh,custom-ecdh:
+SHORT=hvk:u:a:
+LONG=help,verbose,key-type:,custom-dh,custom-ecdh:,run-acme-as:,account-key-type:
 
 PARSED=$(getopt --options $SHORT --longoptions $LONG --name "$0" -- "$@")
 
@@ -55,7 +62,9 @@ while true; do
 			echo "Available options :"
 				echo "-h / --help"
 				echo "-v / --verbose"
-				echo "-k / --key"
+				echo "-k / --key-type"
+				echo "-u / --run-acme-as"
+				echo "-a / --account-key-type"
 				echo "--custom-dh"
 				echo "--custom-ecdh (secp256r1|secp384r1|secp521r1)"
 			exit 1
@@ -65,8 +74,8 @@ while true; do
 			v=y
 			shift
 			;;
-		-k|--key)
-			key="$2"
+		-k|--key-type)
+			domain_key_type="$2"
 			shift 2
 			;;
 		--custom-dh)
@@ -75,6 +84,14 @@ while true; do
 			;;
 		--custom-ecdh)
 			use_custom_ecdh="$2"
+			shift 2
+			;;
+		-u|--run-acme-as)
+			acme_user="$2"
+			shift 2
+			;;
+		-a|--account-key-type)
+			account_key_type="$2"
 			shift 2
 			;;
 		--)
@@ -93,25 +110,38 @@ domain=$1
 challenge_dir=$2
 altname=${@:3}
 
-echo "verbose: $v ; key: $key ; customDH: $use_custom_dh ; customECDH: $use_custom_ecdh ; $domain $challenge_dir $altname"
+#user input validation
+##account key type : RSA or ECDSA
+if [ ! "$account_key_type" == "RSA" ] && [ ! "$account_key_type" == "ECDSA" ]; then
+	echo "Supported account key type : RSA, ECDSA"
+	exit 1
+fi
+##domain key type : RSA or ECDSA
+if [ ! "$domain_key_type" == "RSA" ] && [ ! "$domain_key_type" == "ECDSA" ]; then
+	echo "Supported key type : RSA, ECDSA"
+	exit 1
+fi
+##custom ecdh curve : none or secp256r1 secp384r1 secp521r1
+if [ ! -z "$use_custom_ecdh" ] && [ ! "$use_custom_ecdh" == "secp256r1" ] && [ ! "$use_custom_ecdh" == "secp384r1" ] && [ ! "$use_custom_ecdh" == "secp521r1" ]; then
+	echo "Supported ECDH curves : secp256r1, secp384r1,secp521r1"
+	exit 1
+fi
 
-####DEV
-exit 1
+echo "verbose: $v ; key: $key ; customDH: $use_custom_dh ; customECDH: $use_custom_ecdh ; user=$acme_user ; $domain $challenge_dir $altname"
+echo "account key : $account_key_type"
+echo "domain key : $domain_key_type"
+
+if [ -z $challenge_dir ]; then
+	echo "Syntax: $0 [options] domain.tld ChallengeDir [Alternative Names separated by spaces]"
+	exit 1
+fi
 
 #######################################################
 ################# END OPTION HANDLING #################
 #######################################################
 
-if [ -z $challenge_dir ]; then
-	echo "Syntax: $0 domain.tld ChallengeDir [AlternativeNames]"
-	exit 1
-fi
-
-#dev only
-#echo "RUNNING IN DEV MODE"
-#domain="networklab.fr"
-#altname="www.networklab.fr plop.networklab.fr prout.networklab.fr"
-#challenge_dir="/home/pfoo/Local/tmp/prout/"
+####DEV
+exit 1
 
 #this check if stdout is asigned to a terminal or not (cron)
 if [ -t 1 ]; then
