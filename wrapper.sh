@@ -25,6 +25,7 @@ declare -u account_key_type="RSA"
 declare -u domain_key_type="ECDSA"
 declare -l use_custom_dh="no"
 declare -l use_custom_ecdh=""
+declare -l renew_domain_key="no"
 
 #loading default configuration file
 if [ -f $my_dir/config.cf ]; then
@@ -43,8 +44,8 @@ if [[ $? -ne 4 ]]; then
 fi
 
 #supported options in short and long version
-SHORT=hvk:u:a:
-LONG=help,verbose,key-type:,custom-dh,custom-ecdh:,run-acme-as:,account-key-type:
+SHORT=hvk:u:a:r
+LONG=help,verbose,key-type:,custom-dh,custom-ecdh:,run-acme-as:,account-key-type:,renew-domain-key
 
 PARSED=$(getopt --options $SHORT --longoptions $LONG --name "$0" -- "$@")
 
@@ -62,9 +63,10 @@ while true; do
 			echo "Available options :"
 				echo "-h / --help"
 				echo "-v / --verbose"
-				echo "-k / --key-type"
-				echo "-u / --run-acme-as"
-				echo "-a / --account-key-type"
+				echo "-k / --key-type (RSA|ECDSA)"
+				echo "-u / --run-acme-as <user>"
+				echo "-a / --account-key-type (RSA|ECDSA)"
+				echo "-r / --renew-domain-key"
 				echo "--custom-dh"
 				echo "--custom-ecdh (secp256r1|secp384r1|secp521r1)"
 			exit 1
@@ -93,6 +95,10 @@ while true; do
 		-a|--account-key-type)
 			account_key_type="$2"
 			shift 2
+			;;
+		-r|--renew-domain-key)
+			renew_domain_key="yes"
+			shift
 			;;
 		--)
 			shift
@@ -130,9 +136,10 @@ fi
 echo "verbose: $v ; key: $key ; customDH: $use_custom_dh ; customECDH: $use_custom_ecdh ; user=$acme_user ; $domain $challenge_dir $altname"
 echo "account key : $account_key_type"
 echo "domain key : $domain_key_type"
+echo "renew domain key : $renew_domain_key"
 
 if [ -z $challenge_dir ]; then
-	echo "Syntax: $0 [options] domain.tld ChallengeDir [Alternative Names separated by spaces]"
+	$0 --help
 	exit 1
 fi
 
