@@ -64,6 +64,11 @@ Running it as user is safer if you don't trust this script entirely, but will al
 Running it as root will prevent acme-tiny from reading your private keys
 In both case, acme-tiny.py will be run as unprivileged user
 
+By default, the script is running as unprivileged user. If you wish to run this script as root, you need to uncomment and 
+set acme_user variable in config.cf to the user that should run acme-tiny.py (acme in this README).
+Please, do not switch from root-mode to user-mode or vice versa if you have already run this script once (this will lead to
+inconsistent files and directories permissions and is unsupported for now).
+
 #### Run the script as user
 Make sure the variable acme_user in config.cf is commented (it should be by default).
 ```

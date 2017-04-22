@@ -22,7 +22,7 @@ my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )/"
 #init default values
 declare acme_user=""
 declare -u account_key_type="RSA"
-declare -u domain_key_type="ECDSA"
+declare -u domain_key_type="RSA"
 declare -l use_custom_dh="no"
 declare -l use_custom_ecdh=""
 declare -l renew_domain_key="no"

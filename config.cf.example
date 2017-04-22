@@ -1,11 +1,24 @@
 #set this if you want to run this script as root
 # acme_tiny will therefore be run by $acme_user and a few files will have their permissions changed to acme_user
 # This add a layer of security for domain key as it is no more readable by acme_tiny
+# Please, do not switch from root-mode to user-mode or vice versa if you have already run this script once as this will lead to 
+# inconsistent files and directories permissions and is unsupported for now.
 #acme_user="acme"
 
-#uncomment this if you want this script to generate and use a custom DH parameter (it will be appended to the generated pem file and autoloaded by apache)
+#The algorithm used for the account key generation. Either RSA or ECDSA. Default is RSA.
+#account_key_type="RSA"
+
+#The Algorithm used for the domain key generation. Either RSA or ECDSA. Default is RSA.
+#domain_key_type="RSA"
+
+#Uncomment this if you want this script to generate and use a custom DH parameter.
+# The custom DH will be appended to the generated pem file and autoloaded by apache.
+# Note that a custom DH key is generated only once and is used for every website you whish to 
+# manage with this script (this is perfectly fine in term of security)
+# Default is no
 #use_custom_dh="yes"
 
-#uncomment this if you want this script to enforce a specific ECDH curve (it will be appended to the generated pem file and autoloaded by apache)
+#Uncomment this if you want this script to enforce a specific ECDH curve (it will be appended to the generated pem file and autoloaded by apache)
 #	valid curves are secp256r1, secp384r1 and secp521r1 (unsupported by chrome); a full list can be obtained using openssl ecparam -list_curves
+# Default is empty
 #use_custom_ecdh="secp384r1"
