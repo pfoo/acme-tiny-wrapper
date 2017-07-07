@@ -133,6 +133,7 @@ if [ ! -z "$use_custom_ecdh" ] && [ ! "$use_custom_ecdh" == "secp256r1" ] && [ !
 	exit 1
 fi
 
+###debug stuff
 echo "verbose: $v ; key: $key ; customDH: $use_custom_dh ; customECDH: $use_custom_ecdh ; user=$acme_user ; $domain $challenge_dir $altname"
 echo "account key : $account_key_type"
 echo "domain key : $domain_key_type"
