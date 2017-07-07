@@ -147,9 +147,6 @@ fi
 ################# END OPTION HANDLING #################
 #######################################################
 
-####DEV
-exit 1
-
 #this check if stdout is asigned to a terminal or not (cron)
 if [ -t 1 ]; then
 	mode="normal"
@@ -176,6 +173,32 @@ dh_param="$my_dir/secrets/dh4096.pem"
 function switch_perm () {
 	if [ ! -z $acme_user ]; then
 		chown $acme_user:$acme_user $@
+	fi
+}
+
+function make_domain_key {
+	#forcing generated file to directly have user only permission
+	umask u=rwx,g=,o=
+	openssl genrsa 4096 > $domain_key
+	#switch back to this script default umask
+	umask u=rwx,g=rx,o=
+}
+
+function make_domain_csr {
+	if [ "$altname" == "" ]; then
+		openssl req -new -sha256 -key $domain_key -subj "/CN=$domain" -out $domain_csr
+		error=$?
+	else
+		openssl req -new -sha256 -key $domain_key -subj "/" -reqexts LE_SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[LE_SAN]\nsubjectAltName=" ; printf "DNS:%b," $domain $altname | sed 's/.$//')) -out $domain_csr
+		error=$?
+	fi
+	#if run by root : this file must belong to $acme_user
+	switch_perm $domain_csr
+	if [ $error == 0 ]; then
+		echo "Success !"
+	else
+		echo "Error when generating CSR"
+		exit 1
 	fi
 }
 
@@ -275,69 +298,67 @@ if [ ! $error == 0 ] ; then
 	fi
 fi
 
-#Check if domain RSA key exists. Create it if it does not exist.
-openssl rsa -noout -text -in $domain_key &> /dev/null
-error=$?
-if [ ! $error == 0 ]; then
-	echo "Missing or invalid domain key for $domain."
-	#exit if we are running in cron mode as we need user interaction otherwise
-	if [ "$mode" == "cron" ]; then
-		echo "[DISASTER] Autorenewing failed. You need to check what went wrong and launch this script manually or your site will be unreachable as soon as your previous certificate expire"
-		exit 1
-	fi
-	declare -l useraction #force action var to lowercase
-	read -p "Would you like to generate a new domain key now ? (yes/no) " useraction
-	if [ "$useraction" == "yes" ]; then
-		#forcing generated file to directly have user only permission
-		umask u=rwx,g=,o=
-		openssl genrsa 4096 > $domain_key
-		#switch back to this script default umask
-		umask u=rwx,g=rx,o=
-	else
-		#can't continue without a key
-		echo "Cannot continue without a valid key file for $domain. Exiting"
-		exit 1
+
+#Force a new domain key to be generated
+if [ "$renew_domain_key" == "yes" ]; then
+	echo "Forcing domain key renew"
+	make_domain_key
+#Don't enforce a new domain key, so we need to check if current domain key exists & is valid
+else
+	#Check if domain RSA key exists. Create it if it does not exist.
+	openssl rsa -noout -text -in $domain_key &> /dev/null
+	error=$?
+	if [ ! $error == 0 ]; then
+		echo "Missing or invalid domain key for $domain."
+		#exit if we are running in cron mode as we need user interaction otherwise
+		if [ "$mode" == "cron" ]; then
+			echo "[DISASTER] Autorenewing failed. You need to check what went wrong and launch this script manually or your site will be unreachable as soon as your previous certificate expire"
+			exit 1
+		fi
+		declare -l useraction #force action var to lowercase
+		read -p "Would you like to generate a new domain key now ? (yes/no) " useraction
+		if [ "$useraction" == "yes" ]; then
+			make_domain_key
+		else
+			#can't continue without a key
+			echo "Cannot continue without a valid key file for $domain. Exiting"
+			exit 1
+		fi
 	fi
 fi
 
-#Check if domain CSR exists.
-openssl req -in $domain_csr -noout -text &> /dev/null
-error=$?
-if [ ! $error == 0 ]; then
-	echo "Missing or invalid domain CSR for $domain"
-	#exit if we are running in cron mode as we need user interaction otherwise
-	if [ "$mode" == "cron" ]; then
-		echo "[DISASTER] Autorenewing failed. You need to check what went wrong and launch this script manually or your site will be unreachable as soon as your previous certificate expire"
-		exit 1
-	fi
-	declare -l useraction #force action var to lowercase
-	read -p "Would you like to generate a new domain CSR now ? (yes/no) " useraction
-	if [ "$useraction" == "yes" ]; then
-		read -p "I am going to generate a new CSR for $domain and these alternatives names : $altname. Confirm ? (yes/no) " useraction
+#If we force a new domain key, we need a new csr too
+if [ "$renew_domain_key" == "yes" ]; then
+        echo "New domain key detected, creating a new csr too"
+        make_domain_csr
+#no new domain key made, checking current csr validity
+else
+	#Check if domain CSR exists.
+	openssl req -in $domain_csr -noout -text &> /dev/null
+	error=$?
+####TODO : check if csr match key using modulus ?
+	if [ ! $error == 0 ]; then
+		echo "Missing or invalid domain CSR for $domain"
+		#exit if we are running in cron mode as we need user interaction otherwise
+		if [ "$mode" == "cron" ]; then
+			echo "[DISASTER] Autorenewing failed. You need to check what went wrong and launch this script manually or your site will be unreachable as soon as your previous certificate expire"
+			exit 1
+		fi
+		declare -l useraction #force action var to lowercase
+		read -p "Would you like to generate a new domain CSR now ? (yes/no) " useraction
 		if [ "$useraction" == "yes" ]; then
-			if [ "$altname" == "" ]; then
-				openssl req -new -sha256 -key $domain_key -subj "/CN=$domain" -out $domain_csr
-				error=$?
+			read -p "I am going to generate a new CSR for $domain and these alternatives names : $altname. Confirm ? (yes/no) " useraction
+			if [ "$useraction" == "yes" ]; then
+				make_domain_csr
 			else
-				openssl req -new -sha256 -key $domain_key -subj "/" -reqexts LE_SAN -config <(cat /etc/ssl/openssl.cnf <(printf "[LE_SAN]\nsubjectAltName=" ; printf "DNS:%b," $domain $altname | sed 's/.$//')) -out $domain_csr
-				error=$?
-			fi
-			#if run by root : this file must belong to $acme_user
-			switch_perm $domain_csr
-			if [ $error == 0 ]; then
-				echo "Success !"
-			else
-				echo "Error when generating CSR"
+				#can't continue without a CSR
 				exit 1
 			fi
 		else
-			#can't continue without a CSR
+			#can't continue without CSR
+			echo "Cannot continue without a valid CSR. Exiting"
 			exit 1
 		fi
-	else
-		#can't continue without CSR
-		echo "Cannot continue without a valid CSR. Exiting"
-		exit 1
 	fi
 fi
 
