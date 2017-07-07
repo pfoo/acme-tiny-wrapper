@@ -5,6 +5,7 @@
 #You might need to change this if acme-tiny switch from github or if letsencrypt change their intermediate certificate
 acme_tiny_url="https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py"
 le_intermediate_url="https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
+le_intermediate_url="https://acme-v01.api.letsencrypt.org/acme/issuer-cert"
 
 #########################
 # don't edit below here #
@@ -380,7 +381,8 @@ if [ ! $error == 0 ] ; then
 fi
 
 echo "Downloading LetsEncrypt intermediate certificate"
-wget --quiet -O $intermediate.new $le_intermediate_url
+#wget --quiet -O $intermediate.new $le_intermediate_url			# old method using direct pem download, but subject to LE changes. See https://github.com/diafygi/acme-tiny/issues/115
+wget -O - $le_intermediate_url | openssl x509 -inform der -outform pem -out $intermediate.new
 openssl x509 -in $intermediate.new -text -noout &> /dev/null
 error=$?
 if [ ! $error == 0 ] ; then
