@@ -182,7 +182,7 @@ function make_domain_key {
 ###todo: generate key according to domain_key_type
 	#forcing generated file to directly have user only permission
 	umask u=rwx,g=,o=
-	openssl genrsa 4096 > $domain_key
+	openssl genrsa 4096 1> $domain_key 2> /dev/null
 	#switch back to this script default umask
 	umask u=rwx,g=rx,o=
 }
@@ -289,7 +289,7 @@ if [ ! $error == 0 ] ; then
 	if [ "$useraction" == "yes" ]; then
 		#forcing generated file to directly have user only permission
 		umask u=rwx,g=,o=
-		openssl genrsa 4096 > $account_key
+		openssl genrsa 4096 1> $account_key 2> /dev/null
 		#switch back to this script default umask
 		umask u=rwx,g=rx,o=
 		#if run by root : this key must belong to $acme_user
