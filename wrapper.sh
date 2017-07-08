@@ -178,6 +178,7 @@ function switch_perm () {
 }
 
 function make_domain_key {
+###todo: generate key according to domain_key_type
 	#forcing generated file to directly have user only permission
 	umask u=rwx,g=,o=
 	openssl genrsa 4096 > $domain_key
@@ -393,6 +394,7 @@ else #running as user
 	umask u=rwx,g=rx,o=
 fi
 
+#check if certificate outputed by acme_tiny.py is valid
 openssl x509 -in $domain_crt -text -noout &> /dev/null
 error=$?
 if [ ! $error == 0 ] ; then
@@ -401,6 +403,7 @@ if [ ! $error == 0 ] ; then
 	exit 1
 fi
 
+#download LE intermediate certificate and check it
 echo "Downloading LetsEncrypt intermediate certificate"
 #wget --quiet -O $intermediate.new $le_intermediate_url			# old method using direct pem download, but subject to LE changes. See https://github.com/diafygi/acme-tiny/issues/115
 wget -O - $le_intermediate_url | openssl x509 -inform der -outform pem -out $intermediate.new
