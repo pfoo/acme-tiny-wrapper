@@ -427,7 +427,7 @@ if [ "$use_custom_dh" == "yes" ]; then
 	cat $dh_param >> $domain_pem
 fi
 if [ $use_custom_ecdh ]; then
-	openssl ecparam -name $use_custom_ecdh >> $domain_pem
+	openssl ecparam -name $use_custom_ecdh 1>> $domain_pem 2> /dev/null
 fi
 
 exit 0
