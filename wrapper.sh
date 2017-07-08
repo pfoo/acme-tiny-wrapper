@@ -198,9 +198,9 @@ function make_domain_csr {
 	#if run by root : this file must belong to $acme_user
 	switch_perm $domain_csr
 	if [ $error == 0 ]; then
-		echo "Success !"
+		[ $quiet == 0 ] && echo "CSR successfully generated"
 	else
-		echo "Error when generating CSR"
+		echo "Error when generating CSR. Can't continue."
 		exit 1
 	fi
 }
@@ -304,7 +304,7 @@ fi
 
 #Force a new domain key to be generated
 if [ "$renew_domain_key" == "yes" ]; then
-	echo "Forcing domain key renew"
+	[ $quiet == 0 ] && echo "Forcing domain key renew"
 	make_domain_key
 #Don't enforce a new domain key, so we need to check if current domain key exists & is valid
 else
@@ -332,7 +332,7 @@ fi
 
 #If we force a new domain key, we need a new csr too
 if [ "$renew_domain_key" == "yes" ]; then
-        echo "New domain key detected, creating a new csr too"
+        [ $quiet == 0 ] && echo "New domain key detected, creating a new csr too"
         make_domain_csr
 #no new domain key made, checking current csr validity
 else
@@ -405,7 +405,7 @@ if [ ! $error == 0 ] ; then
 fi
 
 #download LE intermediate certificate and check it
-echo "Downloading LetsEncrypt intermediate certificate"
+[ $quiet == 0 ] && echo "Downloading LetsEncrypt intermediate certificate"
 #wget --quiet -O $intermediate.new $le_intermediate_url			# old method using direct pem download, but subject to LE changes. See https://github.com/diafygi/acme-tiny/issues/115
 wget -O - $le_intermediate_url | openssl x509 -inform der -outform pem -out $intermediate.new
 openssl x509 -in $intermediate.new -text -noout &> /dev/null
@@ -418,7 +418,7 @@ fi
 
 #Final stage. This is only done if all preceding test succeeded.
 #This means that, if anything went wrong during autorenew, $intermediate and $domain_pem will still be valid and wont make your site unreachable when apache restart.
-echo "All good, you now have a new signed certificate for $domain !"
+[ $quiet == 0 ] && echo "All good, you now have a new signed certificate for $domain !"
 mv $intermediate.new $intermediate
 cat $domain_crt $intermediate > $domain_pem #we are bundling LE signed certificate with LE intermediate certificate as apache SSLCertificateFile allow this since version 2.4.8 (certificates must be sorted from leaf to root)
 
