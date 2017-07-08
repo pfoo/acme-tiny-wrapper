@@ -20,6 +20,7 @@ done
 my_dir="$( cd -P "$( dirname "$my_source" )" && pwd )/"
 
 #init default values
+declare quiet=0
 declare acme_user=""
 declare -u account_key_type="RSA"
 declare -u domain_key_type="RSA"
@@ -44,8 +45,8 @@ if [[ $? -ne 4 ]]; then
 fi
 
 #supported options in short and long version
-SHORT=hvk:u:a:r
-LONG=help,verbose,key-type:,custom-dh,custom-ecdh:,run-acme-as:,account-key-type:,renew-domain-key
+SHORT=hqk:u:a:r
+LONG=help,quiet,key-type:,custom-dh,custom-ecdh:,run-acme-as:,account-key-type:,renew-domain-key
 
 PARSED=$(getopt --options $SHORT --longoptions $LONG --name "$0" -- "$@")
 
@@ -62,7 +63,7 @@ while true; do
 			echo "Syntax: $0 [options] domain.tld ChallengeDir [Alternative Names separated by spaces]"
 			echo "Available options :"
 				echo "-h / --help"
-				echo "-v / --verbose"
+				echo "-q / --quiet"
 				echo "-k / --key-type (RSA|ECDSA)"
 				echo "-u / --run-acme-as <user>"
 				echo "-a / --account-key-type (RSA|ECDSA)"
@@ -72,8 +73,8 @@ while true; do
 			exit 1
 			shift
 			;;
-		-v|--verbose)
-			v=y
+		-q|--quiet)
+			quiet=1
 			shift
 			;;
 		-k|--key-type)
@@ -134,7 +135,7 @@ if [ ! -z "$use_custom_ecdh" ] && [ ! "$use_custom_ecdh" == "secp256r1" ] && [ !
 fi
 
 ###debug stuff
-echo "verbose: $v ; key: $key ; customDH: $use_custom_dh ; customECDH: $use_custom_ecdh ; user=$acme_user ; $domain $challenge_dir $altname"
+echo "quiet: $quiet ; key: $key ; customDH: $use_custom_dh ; customECDH: $use_custom_ecdh ; user=$acme_user ; $domain $challenge_dir $altname"
 echo "account key : $account_key_type"
 echo "domain key : $domain_key_type"
 echo "renew domain key : $renew_domain_key"
