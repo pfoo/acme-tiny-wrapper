@@ -407,7 +407,7 @@ fi
 #download LE intermediate certificate and check it
 [ $quiet == 0 ] && echo "Downloading LetsEncrypt intermediate certificate"
 #wget --quiet -O $intermediate.new $le_intermediate_url			# old method using direct pem download, but subject to LE changes. See https://github.com/diafygi/acme-tiny/issues/115
-wget -O - $le_intermediate_url | openssl x509 -inform der -outform pem -out $intermediate.new
+wget --quiet -O - $le_intermediate_url | openssl x509 -inform der -outform pem -out $intermediate.new
 openssl x509 -in $intermediate.new -text -noout &> /dev/null
 error=$?
 if [ ! $error == 0 ] ; then
