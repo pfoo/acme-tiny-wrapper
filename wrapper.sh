@@ -380,15 +380,17 @@ if [ ! "$is_writeable" == "yes"  ]; then
 	exit 1
 fi
 
+acme_modifier=""
+[ $quiet == 1 ] && acme_modifier="--quiet"
 if [ ! -z $acme_user ]; then #running as root so we switch to $acme_user for running acme_tiny.py
 	su $acme_user -c "umask u=rwx,go=rx ;\
-		python $my_dir/acme_tiny.py --account-key $account_key --csr $domain_csr --acme-dir $challenge_dir > $domain_crt ;\
+		python $my_dir/acme_tiny.py $acme_modifier --account-key $account_key --csr $domain_csr --acme-dir $challenge_dir > $domain_crt ;\
 		chmod o-r $domain_crt ;\
 		umask u=rwx,g=rx,o="
 else #running as user
 	#defaulting to umask 022 in order to make sure the created challenge file in acme-dir is world- (mainly webserver-) readable
 	umask u=rwx,go=rx
-	python $my_dir/acme_tiny.py --account-key $account_key --csr $domain_csr --acme-dir $challenge_dir > $domain_crt
+	python $my_dir/acme_tiny.py $acme_modifier --account-key $account_key --csr $domain_csr --acme-dir $challenge_dir > $domain_crt
 	#we don't want certificate to be readable by anyone else
 	chmod o-r $domain_crt
 	#Switching back to umask 027
