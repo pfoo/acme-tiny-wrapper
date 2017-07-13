@@ -182,7 +182,7 @@ function make_domain_key {
 ###todo: generate key according to domain_key_type
 	#forcing generated file to directly have user only permission
 	umask u=rwx,g=,o=
-	openssl genrsa 4096 1> $domain_key 2> /dev/null
+	openssl genrsa -out $domain_key 4096 2> /dev/null
 	#switch back to this script default umask
 	umask u=rwx,g=rx,o=
 }
@@ -244,7 +244,7 @@ if [ "$use_custom_dh" == "yes" ]; then
 		declare -l useraction #force action var to lowercase
 		read -p "Would you like to generate a new 4096bit DH parameter now (this might take a very long time) ? (yes/no) " useraction
 		if [ "$useraction" == "yes" ]; then
-			openssl dhparam 4096 -out $dh_param
+			openssl dhparam -out $dh_param 4096
 		else
 			echo "You asked for a custom dh parameter in configuration, but denied it here. Cannot continue."
 			echo "You can also provide your own DH parameter in PEM format at $dh_param"
@@ -289,7 +289,7 @@ if [ ! $error == 0 ] ; then
 	if [ "$useraction" == "yes" ]; then
 		#forcing generated file to directly have user only permission
 		umask u=rwx,g=,o=
-		openssl genrsa 4096 1> $account_key 2> /dev/null
+		openssl genrsa -out $account_key 4096 2> /dev/null
 		#switch back to this script default umask
 		umask u=rwx,g=rx,o=
 		#if run by root : this key must belong to $acme_user
