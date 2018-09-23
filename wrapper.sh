@@ -2,9 +2,8 @@
 
 #v1.1
 
-#You might need to change this if acme-tiny switch from github or if letsencrypt change their intermediate certificate
+#You might need to change this if acme-tiny switch from github
 acme_tiny_url="https://raw.githubusercontent.com/diafygi/acme-tiny/master/acme_tiny.py"
-le_intermediate_url="https://acme-v01.api.letsencrypt.org/acme/issuer-cert"
 
 #########################
 # don't edit below here #
@@ -167,7 +166,6 @@ domain_key="$my_dir/secrets/$domain.key"
 domain_csr="$my_dir/work/$domain/$domain.csr"
 domain_crt="$my_dir/work/$domain/$domain.crt"
 domain_pem="$my_dir/work/$domain/$domain.pem"
-intermediate="$my_dir/work/$domain/intermediate.pem"
 dh_param="$my_dir/secrets/dh4096.pem"
 
 #switch permission to user if the script is run as root
@@ -406,23 +404,10 @@ if [ ! $error == 0 ] ; then
 	exit 1
 fi
 
-#download LE intermediate certificate and check it
-[ $quiet == 0 ] && echo "Downloading LetsEncrypt intermediate certificate"
-#wget --quiet -O $intermediate.new $le_intermediate_url			# old method using direct pem download, but subject to LE changes. See https://github.com/diafygi/acme-tiny/issues/115
-wget --quiet -O - $le_intermediate_url | openssl x509 -inform der -outform pem -out $intermediate.new
-openssl x509 -in $intermediate.new -text -noout &> /dev/null
-error=$?
-if [ ! $error == 0 ] ; then
-	echo "ERROR: I have failed downloading a valid LetsEncrypt intermediate certificate. Exiting"
-	if [ "$mode" == "cron" ]; then echo "[DISASTER] Autorenewing failed. You need to check what went wrong and launch this script manually or your site will be unreachable as soon as your previous certificate expire"; fi
-	exit 1
-fi
-
 #Final stage. This is only done if all preceding test succeeded.
-#This means that, if anything went wrong during autorenew, $intermediate and $domain_pem will still be valid and wont make your site unreachable when apache restart.
+#This means that, if anything went wrong during autorenew, $domain_pem will still be valid and wont make your site unreachable when apache restart.
 [ $quiet == 0 ] && echo "All good, you now have a new signed certificate for $domain !"
-mv $intermediate.new $intermediate
-cat $domain_crt $intermediate > $domain_pem #we are bundling LE signed certificate with LE intermediate certificate as apache SSLCertificateFile allow this since version 2.4.8 (certificates must be sorted from leaf to root)
+cat $domain_crt > $domain_pem
 
 # Add custom DH parameters and an EC curve name for ephemeral keys in $domain_pem ; see http://httpd.apache.org/docs/current/mod/mod_ssl.html#sslcertificatefile
 if [ "$use_custom_dh" == "yes" ]; then

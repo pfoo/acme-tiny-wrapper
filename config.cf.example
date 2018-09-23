@@ -1,6 +1,6 @@
 #set this if you want to run this script as root
-# acme_tiny will therefore be run by $acme_user and a few files will have their permissions changed to acme_user
-# This add a layer of security for domain key as it is no more readable by acme_tiny
+# When running as root, acme_tiny.py will therefore be run by $acme_user and a few files will have their permissions changed to acme_user
+# This add a layer of security for domain key as they are no more readable by acme_tiny.py
 # Please, do not switch from root-mode to user-mode or vice versa if you have already run this script once as this will lead to 
 # inconsistent files and directories permissions and is unsupported for now.
 #acme_user="acme"
