@@ -59,10 +59,10 @@ Alias /.well-known/acme-challenge "/home/example.tld/www/challenges"
 
 ### Run the script 
 
-There are two way of running this script : as user or as root.
-Running it as user is safer if you don't trust this script entirely, but will allow acme-tiny.py to read your private keys
-Running it as root will prevent acme-tiny from reading your private keys
-In both case, acme-tiny.py will be run as unprivileged user
+There are two way of running this script : as user or as root.<br>
+Running it as user is safer if you don't trust this script entirely, but will allow acme-tiny.py to read your private keys.<br>
+Running it as root will prevent acme-tiny.py from reading your private keys.<br>
+In both case, acme-tiny.py will be run as unprivileged user.
 
 #### Run the script as user
 Make sure the variable acme_user in config.cf is commented (it should be by default).
